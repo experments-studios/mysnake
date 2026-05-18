@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mysnake</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #050505; 
+            font-family: 'Orbitron', sans-serif; 
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            pointer-events: none;
+            padding: 40px 0;
+            box-sizing: border-box;
+        }
+
+        .top-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .score-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 40px;
+            border-radius: 100px;
+            border: 2px solid #00f2ff;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 30px;
+        }
+
+        #score-label {
+            color: #00f2ff;
+            font-size: 28px;
+            letter-spacing: 3px;
+        }
+
+        #coin-label {
+            color: #ffd700;
+            font-size: 28px;
+            letter-spacing: 3px;
+        }
+
+        #shop-btn {
+            padding: 10px 30px;
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #ffd700;
+            border-radius: 30px;
+            color: #ffd700;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s;
+            letter-spacing: 2px;
+        }
+
+        #shop-btn:hover {
+            background: rgba(255, 215, 0, 0.4);
+            transform: scale(1.05);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 85px);
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            width: 85px; height: 85px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 20px;
+            color: #00f2ff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px;
+            backdrop-filter: blur(5px);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn:active {
+            background: rgba(0, 242, 255, 0.4);
+            transform: scale(0.9);
+            box-shadow: 0 0 30px #00f2ff;
+        }
+
+        .up { grid-column: 2; }
+        .left { grid-column: 1; }
+        .down { grid-column: 2; }
+        .right { grid-column: 3; }
+
+        @media (min-width: 1025px) { .controls { display: none; } }
+
+        /* Shop Modal */
+        #shop-modal {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            pointer-events: auto;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        #shop-modal.active {
+            display: flex;
+        }
+
+        .shop-title {
+            color: #00f2ff;
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+        }
+
+        .shop-coins {
+            color: #ffd700;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 900px;
+            padding: 0 20px;
+        }
+
+        @media (max-width: 768px) {
+            .shop-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .shop-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 242, 255, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .shop-item:hover {
+            border-color: #00f2ff;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+
+        .shop-item.owned {
+            border-color: #00ff00;
+            opacity: 0.8;
+        }
+
+        .shop-item.active-avatar {
+            border-color: #ffd700;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        .shop-item-canvas {
+            width: 100%;
+            height: 150px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .shop-item-name {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .shop-item-price {
+            color: #ffd700;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .shop-item-desc {
+            color: #aaa;
+            font-size: 11px;
+        }
+
+        .shop-close {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 15px 40px;
+            background: rgba(0, 242, 255, 0.2);
+            border: 2px solid #00f2ff;
+            border-radius: 30px;
+            color: #00f2ff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .shop-close:hover {
+            background: rgba(0, 242, 255, 0.4);
+        }
+
+        #respawn-btn {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 50px;
+            background: rgba(0, 242, 255, 0.2);
+            border: 2px solid #00f2ff;
+            border-radius: 30px;
+            color: #00f2ff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 50;
+            transition: all 0.3s;
+        }
+
+        #respawn-btn:hover {
+            background: rgba(0, 242, 255, 0.4);
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+
+    <div id="overlay">
+        <div class="top-bar">
+            <div class="score-container">
+                <div id="score-label">SCORE: <span id="score-val">0</span></div>
+                <div id="coin-label">COINS: <span id="coin-val">0</span></div>
+            </div>
+            <button id="shop-btn" onclick="toggleShop()">🛒 SHOP</button>
+        </div>
+
+        <div class="controls">
+            <div class="btn up" onpointerdown="setDir('up')">▲</div>
+            <div class="btn left" onpointerdown="setDir('left')">◀</div>
+            <div class="btn down" onpointerdown="setDir('down')">▼</div>
+            <div class="btn right" onpointerdown="setDir('right')">▶</div>
+        </div>
+    </div>
+
+    <button id="respawn-btn" onclick="useRespawn()">🔄 USE RESPAWN (50 COINS)</button>
+
+    <div id="shop-modal">
+        <div class="shop-title">🛒 SHOP</div>
+        <div class="shop-coins">Your Coins: <span id="shop-coin-val">0</span></div>
+        <div class="shop-grid">
+            <div class="shop-item" id="item-avatar-green" onclick="buyItem('avatar-green', 100)">
+                <canvas class="shop-item-canvas" id="canvas-avatar-green"></canvas>
+                <div class="shop-item-name">Green Snake</div>
+                <div class="shop-item-price">100 🪙</div>
+                <div class="shop-item-desc">New green neon avatar</div>
+            </div>
+            <div class="shop-item" id="item-avatar-red" onclick="buyItem('avatar-red', 150)">
+                <canvas class="shop-item-canvas" id="canvas-avatar-red"></canvas>
+                <div class="shop-item-name">Red Snake</div>
+                <div class="shop-item-price">150 🪙</div>
+                <div class="shop-item-desc">New red neon avatar</div>
+            </div>
+            <div class="shop-item" id="item-avatar-gold" onclick="buyItem('avatar-gold', 300)">
+                <canvas class="shop-item-canvas" id="canvas-avatar-gold"></canvas>
+                <div class="shop-item-name">Gold Snake</div>
+                <div class="shop-item-price">300 🪙</div>
+                <div class="shop-item-desc">Premium gold avatar</div>
+            </div>
+            <div class="shop-item" id="item-respawn" onclick="buyItem('respawn', 50)">
+                <canvas class="shop-item-canvas" id="canvas-respawn"></canvas>
+                <div class="shop-item-name">Extra Respawn</div>
+                <div class="shop-item-price">50 🪙</div>
+                <div class="shop-item-desc">+1 respawn right</div>
+            </div>
+            <div class="shop-item" id="item-food-bonus" onclick="buyItem('food-bonus', 200)">
+                <canvas class="shop-item-canvas" id="canvas-food-bonus"></canvas>
+                <div class="shop-item-name">Bonus Food</div>
+                <div class="shop-item-price">200 🪙</div>
+                <div class="shop-item-desc">Food gives +20 score</div>
+            </div>
+            <div class="shop-item" id="item-food-super" onclick="buyItem('food-super', 500)">
+                <canvas class="shop-item-canvas" id="canvas-food-super"></canvas>
+                <div class="shop-item-name">Super Food</div>
+                <div class="shop-item-price">500 🪙</div>
+                <div class="shop-item-desc">Food gives +50 score</div>
+            </div>
+        </div>
+        <button class="shop-close" onclick="toggleShop()">CLOSE</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        let scene, camera, renderer, snake = [], food, grid;
+        let dir = { x: 1, z: 0 };
+        let nextDir = { x: 1, z: 0 };
+        let score = 0;
+        let speed = 150;
+        const GRID_SIZE = 20;
+
+        // Coin & Shop System
+        let coins = 0;
+        let ownedItems = [];
+        let activeAvatar = 'default';
+        let foodBonus = 10;
+        let respawnCount = 0;
+        let isGameOver = false;
+        let gameLoopTimeout = null;
+
+        const DB_NAME = 'SnakeGameDB';
+        const STORE_NAME = 'gameData';
+        let db = null;
+
+        // Shop preview scenes
+        let shopPreviewScenes = {};
+        let shopPreviewRenderers = {};
+        let shopPreviewCameras = {};
+        let shopPreviewMeshes = {};
+        let shopPreviewAnimIds = {};
+
+        // IndexedDB Setup
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME);
+                    }
+                };
+            });
+        }
+
+        function saveData() {
+            if (!db) return;
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            store.put(coins, 'coins');
+            store.put(ownedItems, 'ownedItems');
+            store.put(activeAvatar, 'activeAvatar');
+            store.put(foodBonus, 'foodBonus');
+            store.put(respawnCount, 'respawnCount');
+        }
+
+        async function loadData() {
+            if (!db) return;
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+
+            const getCoins = store.get('coins');
+            const getOwned = store.get('ownedItems');
+            const getAvatar = store.get('activeAvatar');
+            const getBonus = store.get('foodBonus');
+            const getRespawn = store.get('respawnCount');
+
+            await new Promise((resolve) => {
+                getCoins.onsuccess = () => {
+                    if (getCoins.result !== undefined) coins = getCoins.result;
+                };
+                getOwned.onsuccess = () => {
+                    if (getOwned.result !== undefined) ownedItems = getOwned.result;
+                };
+                getAvatar.onsuccess = () => {
+                    if (getAvatar.result !== undefined) activeAvatar = getAvatar.result;
+                };
+                getBonus.onsuccess = () => {
+                    if (getBonus.result !== undefined) foodBonus = getBonus.result;
+                };
+                getRespawn.onsuccess = () => {
+                    if (getRespawn.result !== undefined) respawnCount = getRespawn.result;
+                };
+                transaction.oncomplete = resolve;
+            });
+
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('coin-val').innerText = coins;
+            document.getElementById('shop-coin-val').innerText = coins;
+
+            // Mark owned items in shop
+            document.querySelectorAll('.shop-item').forEach(el => {
+                el.classList.remove('owned', 'active-avatar');
+            });
+
+            ownedItems.forEach(item => {
+                const el = document.getElementById('item-' + item);
+                if (el) el.classList.add('owned');
+            });
+
+            if (activeAvatar && activeAvatar !== 'default') {
+                const el = document.getElementById('item-' + activeAvatar);
+                if (el) el.classList.add('active-avatar');
+            }
+        }
+
+        function addCoins(amount) {
+            coins += amount;
+            saveData();
+            updateUI();
+        }
+
+        function buyItem(itemId, price) {
+            if (ownedItems.includes(itemId)) {
+                if (itemId.startsWith('avatar-')) {
+                    activeAvatar = itemId;
+                    saveData();
+                    updateUI();
+                }
+                return;
+            }
+
+            if (coins < price) {
+                alert('Not enough coins!');
+                return;
+            }
+
+            coins -= price;
+            ownedItems.push(itemId);
+
+            if (itemId === 'food-bonus') foodBonus = 20;
+            if (itemId === 'food-super') foodBonus = 50;
+            if (itemId === 'respawn') respawnCount += 1;
+            if (itemId.startsWith('avatar-')) activeAvatar = itemId;
+
+            saveData();
+            updateUI();
+        }
+
+        function toggleShop() {
+            const modal = document.getElementById('shop-modal');
+            modal.classList.toggle('active');
+
+            if (modal.classList.contains('active')) {
+                startShopPreviews();
+            } else {
+                stopShopPreviews();
+            }
+        }
+
+        function useRespawn() {
+            if (respawnCount <= 0) {
+                alert('No respawns left! Buy from shop.');
+                return;
+            }
+            respawnCount--;
+            saveData();
+            isGameOver = false;
+            document.getElementById('respawn-btn').style.display = 'none';
+
+            // Reset snake but keep score
+            snake.forEach(part => scene.remove(part));
+            snake = [];
+            createSnakePart(0, 0, true);
+            dir = { x: 1, z: 0 };
+            nextDir = { x: 1, z: 0 };
+
+            gameLoop();
+        }
+
+        function getAvatarColors(avatar) {
+            switch(avatar || activeAvatar) {
+                case 'avatar-green': return { head: 0x00ff00, body: 0x004400, emissiveHead: 0x00ff00, emissiveBody: 0x002200 };
+                case 'avatar-red': return { head: 0xff0000, body: 0x440000, emissiveHead: 0xff0000, emissiveBody: 0x220000 };
+                case 'avatar-gold': return { head: 0xffd700, body: 0x665500, emissiveHead: 0xffd700, emissiveBody: 0x332200 };
+                default: return { head: 0x00f2ff, body: 0x7000ff, emissiveHead: 0x00f2ff, emissiveBody: 0x220044 };
+            }
+        }
+
+        // Shop 3D Preview System
+        function initShopPreview(canvasId, type, config) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            const width = canvas.clientWidth || 250;
+            const height = canvas.clientHeight || 150;
+
+            const previewScene = new THREE.Scene();
+            previewScene.background = new THREE.Color(0x0a0a0a);
+
+            const previewCamera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+            previewCamera.position.set(3, 3, 4);
+            previewCamera.lookAt(0, 0, 0);
+
+            const previewRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            previewRenderer.setSize(width, height);
+            previewRenderer.setPixelRatio(window.devicePixelRatio);
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            previewScene.add(ambient);
+
+            const pointLight = new THREE.PointLight(0xffffff, 1, 20);
+            pointLight.position.set(5, 5, 5);
+            previewScene.add(pointLight);
+
+            const meshes = [];
+
+            if (type === 'snake') {
+                const colors = getAvatarColors(config.avatar);
+                // Create a small snake preview (head + 2 body parts)
+                const positions = [[0, 0, 0], [-1, 0, 0], [-2, 0, 0]];
+
+                positions.forEach((pos, idx) => {
+                    const geo = new THREE.BoxGeometry(0.85, 0.85, 0.85);
+                    const isHead = idx === 0;
+                    const mat = new THREE.MeshPhongMaterial({
+                        color: isHead ? colors.head : colors.body,
+                        emissive: isHead ? colors.emissiveHead : colors.emissiveBody,
+                        emissiveIntensity: 0.6,
+                        shininess: 100
+                    });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(pos[0], pos[1], pos[2]);
+                    previewScene.add(mesh);
+                    meshes.push(mesh);
+                });
+            } else if (type === 'respawn') {
+                // Respawn icon - circular arrow
+                const torusGeo = new THREE.TorusGeometry(0.8, 0.15, 16, 32, Math.PI * 1.5);
+                const torusMat = new THREE.MeshPhongMaterial({
+                    color: 0x00f2ff,
+                    emissive: 0x00f2ff,
+                    emissiveIntensity: 0.5
+                });
+                const torus = new THREE.Mesh(torusGeo, torusMat);
+                torus.rotation.z = Math.PI / 4;
+                previewScene.add(torus);
+                meshes.push(torus);
+
+                // Arrow head
+                const coneGeo = new THREE.ConeGeometry(0.3, 0.6, 8);
+                const cone = new THREE.Mesh(coneGeo, torusMat);
+                cone.position.set(0.7, 0.7, 0);
+                cone.rotation.z = -Math.PI / 4;
+                previewScene.add(cone);
+                meshes.push(cone);
+            } else if (type === 'food') {
+                // Food item preview
+                const geo = new THREE.IcosahedronGeometry(0.7, 0);
+                const mat = new THREE.MeshPhongMaterial({
+                    color: config.color || 0xff007f,
+                    emissive: config.color || 0xff007f,
+                    emissiveIntensity: 0.8
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                previewScene.add(mesh);
+                meshes.push(mesh);
+
+                // Glow ring
+                const ringGeo = new THREE.TorusGeometry(1.2, 0.05, 8, 32);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: config.color || 0xff007f,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                previewScene.add(ring);
+                meshes.push(ring);
+            }
+
+            shopPreviewScenes[canvasId] = previewScene;
+            shopPreviewRenderers[canvasId] = previewRenderer;
+            shopPreviewCameras[canvasId] = previewCamera;
+            shopPreviewMeshes[canvasId] = meshes;
+        }
+
+        function startShopPreviews() {
+            // Initialize previews if not already done
+            if (Object.keys(shopPreviewScenes).length === 0) {
+                initShopPreview('canvas-avatar-green', 'snake', { avatar: 'avatar-green' });
+                initShopPreview('canvas-avatar-red', 'snake', { avatar: 'avatar-red' });
+                initShopPreview('canvas-avatar-gold', 'snake', { avatar: 'avatar-gold' });
+                initShopPreview('canvas-respawn', 'respawn', {});
+                initShopPreview('canvas-food-bonus', 'food', { color: 0xffaa00 });
+                initShopPreview('canvas-food-super', 'food', { color: 0xff00ff });
+            }
+
+            // Start animation loops
+            Object.keys(shopPreviewScenes).forEach(canvasId => {
+                animateShopPreview(canvasId);
+            });
+        }
+
+        function stopShopPreviews() {
+            Object.keys(shopPreviewAnimIds).forEach(id => {
+                cancelAnimationFrame(shopPreviewAnimIds[id]);
+            });
+            shopPreviewAnimIds = {};
+        }
+
+        function animateShopPreview(canvasId) {
+            if (!document.getElementById('shop-modal').classList.contains('active')) return;
+
+            const scene3d = shopPreviewScenes[canvasId];
+            const renderer3d = shopPreviewRenderers[canvasId];
+            const camera3d = shopPreviewCameras[canvasId];
+            const meshes = shopPreviewMeshes[canvasId];
+
+            if (!scene3d || !renderer3d) return;
+
+            // Rotate meshes
+            meshes.forEach((mesh, idx) => {
+                if (canvasId.includes('snake') || canvasId.includes('respawn')) {
+                    mesh.rotation.y += 0.02;
+                } else {
+                    mesh.rotation.y += 0.03;
+                    mesh.rotation.x += 0.01;
+                }
+            });
+
+            renderer3d.render(scene3d, camera3d);
+            shopPreviewAnimIds[canvasId] = requestAnimationFrame(() => animateShopPreview(canvasId));
+        }
+
+        init();
+        animate();
+
+        async function init() {
+            await initDB();
+            await loadData();
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.05);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 18, 12);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambient);
+
+            const blueLight = new THREE.PointLight(0x00f2ff, 2, 50);
+            blueLight.position.set(10, 10, 10);
+            scene.add(blueLight);
+
+            // Starfield Background
+            const starsGeo = new THREE.BufferGeometry();
+            const starsMat = new THREE.PointsMaterial({color: 0xFFFFFF, size: 0.1});
+            const starVertices = [];
+            for(let i=0; i<5000; i++) {
+                starVertices.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
+            }
+            starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const stars = new THREE.Points(starsGeo, starsMat);
+            scene.add(stars);
+
+            // Floor Grid
+            grid = new THREE.GridHelper(GRID_SIZE, GRID_SIZE, 0x00f2ff, 0x222222);
+            grid.position.y = 0;
+            scene.add(grid);
+
+            // Initial Snake
+            createSnakePart(0, 0, true);
+            createFood();
+
+            // Keyboard
+            window.addEventListener('keydown', (e) => {
+                const key = e.key.replace('Arrow', '').toLowerCase();
+                if (key === 's') {
+                    toggleShop();
+                    return;
+                }
+                setDir(key);
+            });
+
+            gameLoop();
+        }
+
+        function setDir(input) {
+            if (input === "up" && dir.z !== 1) nextDir = { x: 0, z: -1 };
+            if (input === "down" && dir.z !== -1) nextDir = { x: 0, z: 1 };
+            if (input === "left" && dir.x !== 1) nextDir = { x: -1, z: 0 };
+            if (input === "right" && dir.x !== -1) nextDir = { x: 1, z: 0 };
+        }
+
+        function createSnakePart(x, z, isHead = false) {
+            const colors = getAvatarColors();
+            const geo = new THREE.BoxGeometry(0.85, 0.85, 0.85);
+            const mat = new THREE.MeshPhongMaterial({ 
+                color: isHead ? colors.head : colors.body,
+                emissive: isHead ? colors.emissiveHead : colors.emissiveBody,
+                emissiveIntensity: 0.5,
+                shininess: 100
+            });
+            const part = new THREE.Mesh(geo, mat);
+            part.position.set(x, 0.5, z);
+            scene.add(part);
+            snake.unshift(part);
+        }
+
+        function createFood() {
+            if (food) scene.remove(food);
+            const geo = new THREE.IcosahedronGeometry(0.6, 0);
+            const mat = new THREE.MeshPhongMaterial({ 
+                color: 0xff007f, 
+                emissive: 0xff007f,
+                emissiveIntensity: 1
+            });
+            food = new THREE.Mesh(geo, mat);
+            food.position.set(
+                Math.round((Math.random() - 0.5) * (GRID_SIZE - 2)),
+                0.6,
+                Math.round((Math.random() - 0.5) * (GRID_SIZE - 2))
+            );
+            scene.add(food);
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            if (respawnCount > 0) {
+                document.getElementById('respawn-btn').style.display = 'block';
+            } else {
+                setTimeout(() => {
+                    alert("GAME OVER! Final Score: " + score);
+                    location.reload();
+                }, 100);
+            }
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+
+            dir = nextDir;
+            const newX = snake[0].position.x + dir.x;
+            const newZ = snake[0].position.z + dir.z;
+
+            // Boundary Wrap
+            let wrapX = newX;
+            let wrapZ = newZ;
+            const limit = GRID_SIZE / 2;
+            if (newX >= limit) wrapX = -limit;
+            if (newX < -limit) wrapX = limit - 1;
+            if (newZ >= limit) wrapZ = -limit;
+            if (newZ < -limit) wrapZ = limit - 1;
+
+            // Self Collision Check
+            for(let i=0; i<snake.length; i++) {
+                if(snake[i].position.x === wrapX && snake[i].position.z === wrapZ) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // Food Check
+            if (wrapX === food.position.x && wrapZ === food.position.z) {
+                score += foodBonus;
+                // 10 score = 1 coin
+                if (score % 10 === 0) {
+                    addCoins(1);
+                }
+                document.getElementById('score-val').innerText = score;
+                speed = Math.max(70, 150 - (score / 5));
+                createFood();
+            } else {
+                const tail = snake.pop();
+                scene.remove(tail);
+            }
+
+            createSnakePart(wrapX, wrapZ, true);
+            if(snake.length > 1) {
+                const colors = getAvatarColors();
+                snake[1].material.color.setHex(colors.body);
+                snake[1].material.emissive.setHex(colors.emissiveBody);
+            }
+
+            gameLoopTimeout = setTimeout(gameLoop, speed);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(food) {
+                food.rotation.y += 0.05;
+                food.rotation.x += 0.02;
+            }
+            if (snake.length > 0) {
+                camera.position.x += (snake[0].position.x * 0.5 - camera.position.x) * 0.05;
+                camera.lookAt(snake[0].position.x * 0.2, 0, snake[0].position.z * 0.2);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
